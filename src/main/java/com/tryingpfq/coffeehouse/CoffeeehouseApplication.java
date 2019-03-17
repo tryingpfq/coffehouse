@@ -1,5 +1,7 @@
 package com.tryingpfq.coffeehouse;
 
+import com.tryingpfq.coffeehouse.conventer.BytesToMoneyConverter;
+import com.tryingpfq.coffeehouse.conventer.MoneyToBytesConverter;
 import com.tryingpfq.coffeehouse.enums.OrderStatus;
 import com.tryingpfq.coffeehouse.model.Coffee;
 import com.tryingpfq.coffeehouse.model.CoffeeOrder;
@@ -19,20 +21,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.convert.RedisCustomConversions;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @SpringBootApplication
 @EnableCaching(proxyTargetClass = true)
+@EnableRedisRepositories
 public class CoffeeehouseApplication implements ApplicationRunner {
 	@Autowired
 	private CoffeeRepository coffeeRepository;
@@ -64,13 +66,31 @@ public class CoffeeehouseApplication implements ApplicationRunner {
 		return new JedisPool(jedisPoolConfig(),host);
 	}
 
+	@Bean
+	public RedisCustomConversions redisCustomConversions() {
+		return new RedisCustomConversions(
+				Arrays.asList(new MoneyToBytesConverter(), new BytesToMoneyConverter()));
+	}
+
 	@Override
 	@Transactional
 	public void run(ApplicationArguments args) throws Exception {
 		//initOrders();
 		//findOrders();
 		//redisTest();
-		cacheTest();
+		//cacheTest();
+		redisCacheRepositoryTest();
+	}
+
+	private void redisCacheRepositoryTest(){
+		Optional<Coffee> c = coffeeService.findSimpleCoffeeFromCache("latte");
+		log.info("Coffee {}", c);
+
+		for (int i = 0; i < 5; i++) {
+			c = coffeeService.findSimpleCoffeeFromCache("latte");
+		}
+
+		log.info("Value from Redis: {}", c);
 	}
 
 	private void cacheTest() throws InterruptedException {

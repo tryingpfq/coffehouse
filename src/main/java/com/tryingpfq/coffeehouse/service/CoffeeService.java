@@ -1,6 +1,8 @@
 package com.tryingpfq.coffeehouse.service;
 
 import com.tryingpfq.coffeehouse.model.Coffee;
+import com.tryingpfq.coffeehouse.model.CoffeeCache;
+import com.tryingpfq.coffeehouse.repository.CoffeeCacheRepository;
 import com.tryingpfq.coffeehouse.repository.CoffeeRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ public class CoffeeService {
     @Autowired
     private CoffeeRepository coffeeRepository;
 
+    @Autowired
+    private CoffeeCacheRepository cacheRepository;
+
     @Cacheable
     public List<Coffee> findAllCoffee() {
         return coffeeRepository.findAll();
@@ -34,6 +39,31 @@ public class CoffeeService {
 
     @CacheEvict
     public void reloadCoffee() {
+    }
+
+    public Optional<Coffee> findSimpleCoffeeFromCache(String name) {
+        Optional<CoffeeCache> cached = cacheRepository.findOneByName(name);
+        if (cached.isPresent()) {
+            CoffeeCache coffeeCache = cached.get();
+            Coffee coffee = Coffee.builder()
+                    .name(coffeeCache.getName())
+                    .price(coffeeCache.getPrice())
+                    .build();
+            log.info("Coffee {} found in cache.", coffeeCache);
+            return Optional.of(coffee);
+        } else {
+            Optional<Coffee> raw = findOneCoffee(name);
+            raw.ifPresent(c -> {
+                CoffeeCache coffeeCache = CoffeeCache.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .price(c.getPrice())
+                        .build();
+                log.info("Save Coffee {} to cache.", coffeeCache);
+                cacheRepository.save(coffeeCache);
+            });
+            return raw;
+        }
     }
 
     public Optional<Coffee> findOneCoffee(String name) {
