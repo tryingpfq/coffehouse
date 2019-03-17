@@ -5,6 +5,7 @@ import com.tryingpfq.coffeehouse.model.Coffee;
 import com.tryingpfq.coffeehouse.model.CoffeeOrder;
 import com.tryingpfq.coffeehouse.repository.CoffeeOrderRepository;
 import com.tryingpfq.coffeehouse.repository.CoffeeRepository;
+import com.tryingpfq.coffeehouse.service.CoffeeService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.money.CurrencyUnit;
 import org.joda.money.Money;
@@ -15,6 +16,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @SpringBootApplication
+@EnableCaching(proxyTargetClass = true)
 public class CoffeeehouseApplication implements ApplicationRunner {
 	@Autowired
 	private CoffeeRepository coffeeRepository;
@@ -42,6 +45,9 @@ public class CoffeeehouseApplication implements ApplicationRunner {
 
 	@Autowired
 	private JedisPoolConfig jedisPoolConfig;
+
+	@Autowired
+	private CoffeeService coffeeService;
 
 	public static void main(String[] args) {
 		SpringApplication.run(CoffeeehouseApplication.class, args);
@@ -63,7 +69,19 @@ public class CoffeeehouseApplication implements ApplicationRunner {
 	public void run(ApplicationArguments args) throws Exception {
 		//initOrders();
 		//findOrders();
-		redisTest();
+		//redisTest();
+		cacheTest();
+	}
+
+	private void cacheTest() throws InterruptedException {
+		log.info("Count: {}", coffeeService.findAllCoffee().size());
+		for (int i = 0; i < 5; i++) {
+			log.info("Reading from cache.");
+			coffeeService.findAllCoffee();
+		}
+		Thread.sleep(5_000);
+		log.info("Reading after refresh.");
+		coffeeService.findAllCoffee().forEach(c -> log.info("Coffee {}", c.getName()));
 	}
 
 	public void initOrders(){
