@@ -79,7 +79,7 @@ public class CoffeeehouseApplication implements ApplicationRunner {
 		//findOrders();
 		//redisTest();
 		//cacheTest();
-		redisCacheRepositoryTest();
+		//redisCacheRepositoryTest();
 	}
 
 	private void redisCacheRepositoryTest(){

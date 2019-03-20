@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,6 +40,15 @@ public class CoffeeService {
 
     @CacheEvict
     public void reloadCoffee() {
+    }
+
+    @Cacheable
+    public List<Coffee> getAllCoffee() {
+        return coffeeRepository.findAll(Sort.by("id"));
+    }
+
+    public List<Coffee> getCoffeeByName(List<String> names) {
+        return coffeeRepository.findByNameInOrderById(names);
     }
 
     public Optional<Coffee> findSimpleCoffeeFromCache(String name) {
